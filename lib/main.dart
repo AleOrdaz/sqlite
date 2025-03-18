@@ -1,123 +1,197 @@
 import 'package:flutter/material.dart';
-import 'package:sqflite_common_ffi/sqflite_ffi.dart';
-import 'package:sqlite/home.dart';
+import 'package:sqlite/db.dart';
+import 'package:sqlite/singleton.dart';
+import 'package:sqlite/user.dart';
 
-void main() {
-  sqfliteFfiInit();
+final dbHelper = DatabaseHelper();
+
+Future<void> main()  async {
+  WidgetsFlutterBinding.ensureInitialized(); //Inicializa los widgets
+
+  await dbHelper.init(); // initialize the database
+
   runApp(const MyApp());
 }
 
 class MyApp extends StatelessWidget {
   const MyApp({super.key});
 
-  // This widget is the root of your application.
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: 'Flutter Demo',
+      title: 'SQFlite Demo',
       theme: ThemeData(
-        // This is the theme of your application.
-        //
-        // TRY THIS: Try running your application with "flutter run". You'll see
-        // the application has a blue toolbar. Then, without quitting the app,
-        // try changing the seedColor in the colorScheme below to Colors.green
-        // and then invoke "hot reload" (save your changes or press the "hot
-        // reload" button in a Flutter-supported IDE, or press "r" if you used
-        // the command line to start the app).
-        //
-        // Notice that the counter didn't reset back to zero; the application
-        // state is not lost during the reload. To reset the state, use hot
-        // restart instead.
-        //
-        // This works for code too, not just values: Most code changes can be
-        // tested with just a hot reload.
-        colorScheme: ColorScheme.fromSeed(seedColor: Colors.deepPurple),
-        useMaterial3: true,
+        primarySwatch: Colors.blue,
       ),
-      home: const MyHomePage(title: 'Flutter Demo Home Page'),
+      home: const MyHomePage(),
     );
   }
 }
 
-class MyHomePage extends StatefulWidget {
-  const MyHomePage({super.key, required this.title});
+class MyHomePage extends StatelessWidget {
+  const MyHomePage({super.key});
 
-  // This widget is the home page of your application. It is stateful, meaning
-  // that it has a State object (defined below) that contains fields that affect
-  // how it looks.
-
-  // This class is the configuration for the state. It holds the values (in this
-  // case the title) provided by the parent (in this case the App widget) and
-  // used by the build method of the State. Fields in a Widget subclass are
-  // always marked "final".
-
-  final String title;
-
-  @override
-  State<MyHomePage> createState() => _MyHomePageState();
-}
-
-class _MyHomePageState extends State<MyHomePage> {
-  int _counter = 0;
-
-  void _incrementCounter() {
-    setState(() {
-      Navigator.of(context).push(MaterialPageRoute(builder: (context) => HomePage()));
-    });
-  }
-
+  // homepage layout
   @override
   Widget build(BuildContext context) {
-    // This method is rerun every time setState is called, for instance as done
-    // by the _incrementCounter method above.
-    //
-    // The Flutter framework has been optimized to make rerunning build methods
-    // fast, so that you can just rebuild anything that needs updating rather
-    // than having to individually change instances of widgets.
     return Scaffold(
       appBar: AppBar(
-        // TRY THIS: Try changing the color here to a specific color (to
-        // Colors.amber, perhaps?) and trigger a hot reload to see the AppBar
-        // change color while the other colors stay the same.
-        backgroundColor: Theme.of(context).colorScheme.inversePrimary,
-        // Here we take the value from the MyHomePage object that was created by
-        // the App.build method, and use it to set our appbar title.
-        title: Text(widget.title),
+        title: const Text('sqflite'),
       ),
       body: Center(
-        // Center is a layout widget. It takes a single child and positions it
-        // in the middle of the parent.
         child: Column(
-          // Column is also a layout widget. It takes a list of children and
-          // arranges them vertically. By default, it sizes itself to fit its
-          // children horizontally, and tries to be as tall as its parent.
-          //
-          // Column has various properties to control how it sizes itself and
-          // how it positions its children. Here we use mainAxisAlignment to
-          // center the children vertically; the main axis here is the vertical
-          // axis because Columns are vertical (the cross axis would be
-          // horizontal).
-          //
-          // TRY THIS: Invoke "debug painting" (choose the "Toggle Debug Paint"
-          // action in the IDE, or press "p" in the console), to see the
-          // wireframe for each widget.
           mainAxisAlignment: MainAxisAlignment.center,
           children: <Widget>[
-            const Text(
-              'You have pushed the button this many times:',
+            ElevatedButton(
+              onPressed: () => _insert(context), //Llamado a un ALERTDIALOG
+              child: const Text('insert'),
             ),
-            Text(
-              '$_counter',
-              style: Theme.of(context).textTheme.headlineMedium,
+            const SizedBox(height: 10),
+            ElevatedButton(
+              onPressed: () => _select(context),
+              child: const Text('query'),
+            ),
+            const SizedBox(height: 10),
+            ElevatedButton(
+              onPressed: () => _update(3, 'Alejandro Ordaz', 28),
+              child: const Text('update'),
+            ),
+            const SizedBox(height: 10),
+            ElevatedButton(
+              onPressed: () => _delete(1),
+              child: const Text('delete'),
             ),
           ],
         ),
       ),
-      floatingActionButton: FloatingActionButton(
-        onPressed: _incrementCounter,
-        tooltip: 'Increment',
-        child: const Icon(Icons.add),
-      ), // This trailing comma makes auto-formatting nicer for build methods.
     );
   }
+
+  // Button onPressed methods
+  void _insert(BuildContext context) async {
+    final name = TextEditingController();
+    final age = TextEditingController();
+
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: const Text('Insertar nuevo usuario'),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const Text('Nombre'),
+              TextFormField(
+                controller: name,
+                obscureText: false ,
+                textAlign: TextAlign.left,
+                decoration: InputDecoration(
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(15),
+                    ),
+                    filled: true,
+                    fillColor: Colors.white,
+                    prefixIcon: const Icon(Icons.person),
+                    errorText: null
+                ),
+                onChanged: (texto) {
+                },
+              ),
+              const SizedBox(height: 20,),
+              const Text('Años(int)'),
+              TextFormField(
+                controller: age,
+                obscureText: false ,
+                textAlign: TextAlign.left,
+                decoration: InputDecoration(
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(15),
+                    ),
+                    filled: true,
+                    fillColor: Colors.white,
+                    prefixIcon: const Icon(Icons.person),
+                    errorText: null
+                ),
+                onChanged: (texto) {
+                },
+              ),
+            ],
+          ),
+          actions: <Widget>[
+            TextButton(
+              onPressed: () {
+                Navigator.of(context).pop(); // Cerrar el AlertDialog
+              },
+              child: const Text('Cancelar'),
+            ),
+            TextButton(
+              onPressed: () async {
+                ///JSON
+                Map<String, dynamic> row = {
+                  DatabaseHelper.columnName: name.text,
+                  DatabaseHelper.columnAge: int.parse(age.text)
+                };
+                final id = await dbHelper.insert(row);
+
+                debugPrint('inserted row id: $id'); // = print("");
+
+                Navigator.of(context).pop(); // Cerrar el AlertDialog
+              },
+              child: const Text('Guardar'),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  void _select(BuildContext context) async {
+    final allRows = await dbHelper.queryAllRows();
+    debugPrint('query all rows:');
+    singleton.users = allRows;
+    for (final row in allRows) {
+      debugPrint(row.toString());
+    }
+    Navigator.push(context, MaterialPageRoute(builder: (context) => Users()));
+  }
+
+
+
+  void _update(id, Nombre, edad) async {
+    // row to update
+    Map<String, dynamic> row = {
+      DatabaseHelper.columnId: id,
+      DatabaseHelper.columnName: Nombre,
+      DatabaseHelper.columnAge: edad
+    };
+    final rowsAffected = await dbHelper.update(row);
+    debugPrint('updated $rowsAffected row(s)');
+  }
+
+  void _delete(id) async {
+    // Assuming that the number of rows is the id for the last row.
+    //final id = await dbHelper.queryRowCount();
+    final rowsDeleted = await dbHelper.delete(id);
+    debugPrint('deleted $rowsDeleted row(s): row $id');
+  }
 }
+/*
+* FutureBuilder<String>(
+    future: downloadData(), // function where you call your api
+    builder: (BuildContext context, AsyncSnapshot<String> snapshot) {  // AsyncSnapshot<Your object type>
+      if( snapshot.connectionState == ConnectionState.waiting){
+          return  Center(child: Text('Please wait its loading...'));
+      }else{
+          if (snapshot.hasError)
+            return Center(child: Text('Error: ${snapshot.error}'));
+          else
+            return Center(child: new Text('${snapshot.data}'));  // snapshot.data  :- get your object which is pass from your downloadData() function
+      }
+    },
+  );
+}
+Future<String> downloadData()async{
+  //   var response =  await http.get('https://getProjectList');
+  return Future.value("Data download successfully"); // return your response
+}
+* */

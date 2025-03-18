@@ -1,57 +1,81 @@
 import 'package:flutter/material.dart';
 import 'package:sqlite/db.dart';
-import 'package:sqlite/singleton.dart';
-import 'package:sqlite/user.dart';
+import 'package:sqlite/home.dart';
 
-final dbHelper = DatabaseHelper();
-
-class Home extends StatefulWidget {
-  const Home({super.key});
+class Users extends StatefulWidget {
+  const Users({super.key});
 
   @override
-  State<Home> createState() => _HomeState();
+  State<Users> createState() => _UsersState();
 }
 
-class _HomeState extends State<Home> {
+class _UsersState extends State<Users> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('sqflite'),
-      ),
-      body: Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: <Widget>[
-            ElevatedButton(
-              onPressed: () => _insert(context), //Llamado a un ALERTDIALOG
-              child: const Text('insert'),
-            ),
-            const SizedBox(height: 10),
-            ElevatedButton(
-              onPressed: _select,
-              child: const Text('query'),
-            ),
-            const SizedBox(height: 10),
-            ElevatedButton(
-              onPressed: _update,
-              child: const Text('update'),
-            ),
-            const SizedBox(height: 10),
-            ElevatedButton(
-              onPressed: _delete,
-              child: const Text('delete'),
-            ),
-          ],
-        ),
+      body: Stack(
+        children: [
+          Column(
+            children: [
+              SizedBox(height: 50),
+              Card(
+                child: Row(
+                  children: [
+                    Text('user1 - 27'),
+                    IconButton(
+                      onPressed: ()=>_delete(1),
+                      icon: Icon(Icons.delete),
+                    ),
+                    IconButton(
+                      onPressed: () => _update(context, 1, 'user1', 27),
+                      icon: Icon(Icons.edit),
+                    ),
+                  ],
+                ),
+              ),
+              Card(
+                child: Row(
+                  children: [
+                    Text('user2 - 29'),
+                    IconButton(
+                      onPressed: ()=>_delete(2),
+                      icon: Icon(Icons.delete),
+                    ),
+                    IconButton(
+                      onPressed: () => _update(context, 2, 'user2', 29),
+                      icon: Icon(Icons.edit),
+                    ),
+                  ],
+                ),
+              ),
+              Card(
+                child: Row(
+                  children: [
+                    Text('user3 - 30'),
+                    IconButton(
+                      onPressed: ()=>_delete(3),
+                      icon: Icon(Icons.delete),
+                    ),
+                    IconButton(
+                      onPressed: () => _update(context, 3, 'user3', 30),
+                      icon: Icon(Icons.edit),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          )
+        ],
       ),
     );
   }
 
-  // Button onPressed methods
-  void _insert(BuildContext context) async {
+  void _update(BuildContext context, int id, String nom, int edad) async {
     final name = TextEditingController();
     final age = TextEditingController();
+
+    name.text = nom;
+    age.text = edad.toString();
 
     showDialog(
       context: context,
@@ -108,13 +132,7 @@ class _HomeState extends State<Home> {
             TextButton(
               onPressed: () async {
                 ///JSON
-                Map<String, dynamic> row = {
-                  DatabaseHelper.columnName: name.text,
-                  DatabaseHelper.columnAge: int.parse(age.text)
-                };
-                final id = await dbHelper.insert(row);
-
-                debugPrint('inserted row id: $id'); // = print("");
+                _update2(id, name.text, int.parse(age.text)); // = print("");
 
                 Navigator.of(context).pop(); // Cerrar el AlertDialog
               },
@@ -126,33 +144,21 @@ class _HomeState extends State<Home> {
     );
   }
 
-  void _select() async {
-    final allRows = await dbHelper.queryAllRows();
-    debugPrint('query all rows:');
-    singleton.users = allRows;
-    for (final row in allRows) {
-      debugPrint(row.toString());
-    }
-
-    Navigator.of(context).push(
-        MaterialPageRoute(builder: (context) => const Users()));
+  void _delete(id) async {
+    // Assuming that the number of rows is the id for the last row.
+    //final id = await dbHelper.queryRowCount();
+    final rowsDeleted = await dbHelper.delete(id);
+    debugPrint('deleted $rowsDeleted row(s): row $id');
   }
 
-  void _update() async {
+  void _update2(id, Nombre, edad) async {
     // row to update
     Map<String, dynamic> row = {
-      DatabaseHelper.columnId: 1,
-      DatabaseHelper.columnName: 'Mary',
-      DatabaseHelper.columnAge: 32
+      DatabaseHelper.columnId: id,
+      DatabaseHelper.columnName: Nombre,
+      DatabaseHelper.columnAge: edad
     };
     final rowsAffected = await dbHelper.update(row);
     debugPrint('updated $rowsAffected row(s)');
-  }
-
-  void _delete() async {
-    // Assuming that the number of rows is the id for the last row.
-    final id = await dbHelper.queryRowCount();
-    final rowsDeleted = await dbHelper.delete(id);
-    debugPrint('deleted $rowsDeleted row(s): row $id');
   }
 }
